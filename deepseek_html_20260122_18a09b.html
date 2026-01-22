@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI文字冒险游戏</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e6e6e6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .game-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(25, 25, 35, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid #2a2a3a;
+        }
+        
+        /* 游戏标题区域 */
+        .game-header {
+            padding: 20px 30px;
+            background: linear-gradient(90deg, #0f3460 0%, #1a1a2e 100%);
+            border-bottom: 2px solid #3949ab;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .game-title {
+            display: flex;
+            align-items: center;
+        }
+        
+        .game-title h1 {
+            font-size: 28px;
+            background: linear-gradient(90deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-left: 15px;
+        }
+        
+        .game-icon {
+            font-size: 32px;
+            color: #4cc9f0;
+        }
+        
+        .game-controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            background: rgba(57, 73, 171, 0.3);
+            border: 1px solid #3949ab;
+            color: #b3c6ff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn:hover {
+            background: rgba(57, 73, 171, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        /* 游戏设置面板 */
+        .game-settings {
+            padding: 20px 30px;
+            background-color: rgba(30, 30, 46, 0.9);
+            border-bottom: 1px solid #2a2a3a;
+            display: none;
+        }
+        
+        .settings-active {
+            display: block;
+        }
+        
+        .settings-title {
+            color: #4cc9f0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .setting-item label {
+            color: #b3c6ff;
+            font-size: 14px;
+        }
+        
+        .setting-item select, .setting-item input {
+            padding: 10px 15px;
+            background-color: rgba(25, 25, 35, 0.8);
+            border: 1px solid #3949ab;
+            border-radius: 6px;
+            color: #e6e6e6;
+            font-size: 14px;
+        }
+        
+        .setting-item input {
+            flex-grow: 1;
+        }
+        
+        .api-key-container {
+            grid-column: span 2;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .api-key-container input {
+            flex-grow: 1;
+        }
+        
+        .save-settings {
+            grid-column: span 2;
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .save-settings:hover {
+            background: linear-gradient(90deg, #3a0ca3, #4361ee);
+        }
+        
+        /* 聊天区域 */
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .chat-messages {
+            flex-grow: 1;
+            padding: 25px 30px;
+            overflow-y: auto;
+            background-color: rgba(20, 20, 30, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* 消息样式 */
+        .message {
+            max-width: 85%;
+            padding: 15px 20px;
+            border-radius: 12px;
+            line-height: 1.5;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            animation: messageAppear 0.3s ease-out;
+        }
+        
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-ai {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #2d3047 0%, #1a1a2e 100%);
+            border-left: 4px solid #4361ee;
+            color: #e6e6e6;
+        }
+        
+        .message-user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #1a3c5e 0%, #0f3460 100%);
+            border-right: 4px solid #4cc9f0;
+            color: #ffffff;
+        }
+        
+        .message-system {
+            align-self: center;
+            background-color: rgba(67, 97, 238, 0.2);
+            border: 1px dashed #4361ee;
+            max-width: 70%;
+            text-align: center;
+            font-style: italic;
+            color: #b3c6ff;
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .message-ai .message-sender {
+            color: #4cc9f0;
+        }
+        
+        .message-user .message-sender {
+            color: #72efdd;
+        }
+        
+        .message-content {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        /* 输入区域 */
+        .message-input-area {
+            padding: 20px 30px;
+            background-color: rgba(30, 30, 46, 0.9);
+            border-top: 1px solid #2a2a3a;
+            display: flex;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+        
+        .message-input {
+            flex-grow: 1;
+            padding: 15px 20px;
+            background-color: rgba(25, 25, 35, 0.8);
+            border: 1px solid #3949ab;
+            border-radius: 10px;
+            color: #e6e6e6;
+            font-size: 16px;
+            resize: none;
+            min-height: 60px;
+            max-height: 120px;
+            line-height: 1.5;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: #4cc9f0;
+            box-shadow: 0 0 0 2px rgba(76, 201, 240, 0.2);
+        }
+        
+        .send-button {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 20px;
+        }
+        
+        .send-button:hover {
+            background: linear-gradient(135deg, #3a0ca3 0%, #4361ee 100%);
+            transform: translateY(-2px);
+        }
+        
+        .send-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 游戏指令提示 */
+        .game-hints {
+            padding: 15px 30px;
+            background-color: rgba(25, 25, 35, 0.7);
+            border-top: 1px solid #2a2a3a;
+            font-size: 14px;
+            color: #b3c6ff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+        
+        .hint-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 加载指示器 */
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #2d3047 0%, #1a1a2e 100%);
+            border-left: 4px solid #4361ee;
+            border-radius: 12px;
+            align-self: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .typing-indicator.active {
+            display: block;
+        }
+        
+        .typing-text {
+            color: #4cc9f0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4cc9f0;
+            animation: typing 1.5s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 100% { opacity: 0.3; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-5px); }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 30, 46, 0.5);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #3949ab;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4cc9f0;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .game-container {
+                height: 95vh;
+                border-radius: 10px;
+            }
+            
+            .game-header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .game-title h1 {
+                font-size: 24px;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .api-key-container, .save-settings {
+                grid-column: span 1;
+            }
+            
+            .chat-messages {
+                padding: 15px 20px;
+            }
+            
+            .message-input-area {
+                padding: 15px 20px;
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 游戏标题区域 -->
+        <div class="game-header">
+            <div class="game-title">
+                <div class="game-icon">
+                    <i class="fas fa-dragon"></i>
+                </div>
+                <h1>AI文字冒险游戏</h1>
+            </div>
+            <div class="game-controls">
+                <button class="control-btn" id="newGameBtn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>新游戏</span>
+                </button>
+                <button class="control-btn" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </button>
+                <button class="control-btn" id="helpBtn">
+                    <i class="fas fa-question-circle"></i>
+                    <span>帮助</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 游戏设置面板 -->
+        <div class="game-settings" id="gameSettings">
+            <h3 class="settings-title">游戏设置</h3>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label for="gameGenre">游戏类型</label>
+                    <select id="gameGenre">
+                        <option value="fantasy">奇幻冒险</option>
+                        <option value="scifi">科幻未来</option>
+                        <option value="mystery">悬疑解谜</option>
+                        <option value="horror">恐怖生存</option>
+                        <option value="historical">历史穿越</option>
+                        <option value="cyberpunk">赛博朋克</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="gameDifficulty">难度等级</label>
+                    <select id="gameDifficulty">
+                        <option value="easy">简单</option>
+                        <option value="normal" selected>普通</option>
+                        <option value="hard">困难</option>
+                        <option value="expert">专家</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label for="playerName">玩家名称</label>
+                    <input type="text" id="playerName" placeholder="输入你的角色名" value="冒险者">
+                </div>
+                
+                <div class="setting-item">
+                    <label for="aiModel">AI模型</label>
+                    <select id="aiModel">
+                        <option value="deepseek-chat">DeepSeek Chat</option>
+                        <option value="deepseek-coder">DeepSeek Coder</option>
+                    </select>
+                </div>
+                
+                <div class="api-key-container">
+                    <div class="setting-item" style="flex-grow: 1;">
+                        <label for="apiKey">DeepSeek API密钥</label>
+                        <input type="password" id="apiKey" placeholder="输入你的API密钥">
+                    </div>
+                    <div class="setting-item">
+                        <label for="apiBase">API地址</label>
+                        <input type="text" id="apiBase" placeholder="API端点" value="https://api.deepseek.com">
+                    </div>
+                </div>
+                
+                <button class="save-settings" id="saveSettingsBtn">保存设置并开始游戏</button>
+            </div>
+        </div>
+        
+        <!-- 聊天区域 -->
+        <div class="chat-area">
+            <div class="chat-messages" id="chatMessages">
+                <!-- AI初始消息 -->
+                <div class="message message-ai">
+                    <div class="message-sender">
+                        <i class="fas fa-robot"></i>
+                        <span>游戏向导</span>
+                    </div>
+                    <div class="message-content">
+                        欢迎来到AI文字冒险游戏！在这里，你将进入一个由AI生成的奇幻世界。你可以探索未知的地域、与角色互动、解决谜题，并塑造属于你自己的故事。
+                        <br><br>
+                        请先点击右上角的"设置"按钮，配置你的API密钥和游戏偏好，然后点击"新游戏"开始你的冒险之旅！
+                    </div>
+                </div>
+                
+                <!-- 系统消息示例 -->
+                <div class="message message-system">
+                    <i class="fas fa-info-circle"></i> 提示：你可以输入像"探索森林"、"与村民交谈"、"检查宝箱"这样的指令来与游戏世界互动。
+                </div>
+            </div>
+            
+            <!-- AI正在输入指示器 -->
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-text">
+                    AI正在思考
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 输入区域 -->
+            <div class="message-input-area">
+                <textarea 
+                    class="message-input" 
+                    id="messageInput" 
+                    placeholder="输入你的行动指令... (例如：探索山洞、与守卫对话、使用钥匙)" 
+                    rows="1"
+                ></textarea>
+                <button class="send-button" id="sendButton">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 游戏指令提示 -->
+        <div class="game-hints">
+            <div class="hint-item">
+                <i class="fas fa-lightbulb" style="color: #4cc9f0;"></i>
+                <span>常用指令：探索 [地点]、使用 [物品]、攻击 [目标]、交谈 [角色]</span>
+            </div>
+            <div class="hint-item">
+                <i class="fas fa-keyboard" style="color: #72efdd;"></i>
+                <span>按 Shift+Enter 换行，按 Enter 发送消息</span>
+            </div>
+            <div class="hint-item">
+                <i class="fas fa-history" style="color: #f72585;"></i>
+                <span>输入"保存游戏"或"加载游戏"来管理进度</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM元素
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const gameSettings = document.getElementById('gameSettings');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const helpBtn = document.getElementById('helpBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        
+        // 游戏状态
+        let gameState = {
+            initialized: false,
+            apiKey: '',
+            apiBase: 'https://api.deepseek.com',
+            playerName: '冒险者',
+            gameGenre: 'fantasy',
+            gameDifficulty: 'normal',
+            aiModel: 'deepseek-chat',
+            gameContext: '',
+            gameHistory: []
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载保存的设置
+            loadSettings();
+            
+            // 设置自动调整文本输入框高度
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if (this.scrollHeight > 120) {
+                    this.style.overflowY = 'auto';
+                } else {
+                    this.style.overflowY = 'hidden';
+                }
+            });
+            
+            // 发送按钮事件
+            sendButton.addEventListener('click', sendMessage);
+            
+            // 输入框事件
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 设置按钮事件
+            settingsBtn.addEventListener('click', function() {
+                gameSettings.classList.toggle('settings-active');
+            });
+            
+            // 新游戏按钮事件
+            newGameBtn.addEventListener('click', startNewGame);
+            
+            // 帮助按钮事件
+            helpBtn.addEventListener('click', showHelp);
+            
+            // 保存设置按钮事件
+            saveSettingsBtn.addEventListener('click', saveSettings);
+            
+            // 初始化消息框滚动
+            scrollToBottom();
+        });
+        
+        // 加载保存的设置
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('aiGameSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                gameState = {...gameState, ...settings};
+                
+                // 更新UI
+                document.getElementById('playerName').value = gameState.playerName;
+                document.getElementById('gameGenre').value = gameState.gameGenre;
+                document.getElementById('gameDifficulty').value = gameState.gameDifficulty;
+                document.getElementById('aiModel').value = gameState.aiModel;
+                document.getElementById('apiKey').value = gameState.apiKey;
+                document.getElementById('apiBase').value = gameState.apiBase;
+            }
+        }
+        
+        // 保存设置
+        function saveSettings() {
+            gameState.playerName = document.getElementById('playerName').value || '冒险者';
+            gameState.gameGenre = document.getElementById('gameGenre').value;
+            gameState.gameDifficulty = document.getElementById('gameDifficulty').value;
+            gameState.aiModel = document.getElementById('aiModel').value;
+            gameState.apiKey = document.getElementById('apiKey').value.trim();
+            gameState.apiBase = document.getElementById('apiBase').value.trim() || 'https://api.deepseek.com';
+            
+            // 保存到本地存储
+            localStorage.setItem('aiGameSettings', JSON.stringify(gameState));
+            
+            // 隐藏设置面板
+            gameSettings.classList.remove('settings-active');
+            
+            // 检查API密钥
+            if (!gameState.apiKey) {
+                addSystemMessage('请先设置DeepSeek API密钥才能开始游戏。你可以在设置中配置。');
+                return;
+            }
+            
+            // 添加成功消息
+            addSystemMessage(`设置已保存！玩家名称：${gameState.playerName}，游戏类型：${getGenreName(gameState.gameGenre)}，难度：${getDifficultyName(gameState.gameDifficulty)}`);
+            
+            // 如果游戏未初始化，提示开始新游戏
+            if (!gameState.initialized) {
+                addSystemMessage('点击"新游戏"按钮开始你的冒险！');
+            }
+        }
+        
+        // 开始新游戏
+        function startNewGame() {
+            // 检查API密钥
+            if (!gameState.apiKey) {
+                addSystemMessage('请先设置DeepSeek API密钥。点击"设置"按钮配置。');
+                gameSettings.classList.add('settings-active');
+                return;
+            }
+            
+            // 清空聊天记录（除了初始消息）
+            const initialMessages = chatMessages.querySelectorAll('.message');
+            if (initialMessages.length > 2) {
+                for (let i = 2; i < initialMessages.length; i++) {
+                    chatMessages.removeChild(initialMessages[i]);
+                }
+            }
+            
+            // 重置游戏状态
+            gameState.gameHistory = [];
+            gameState.initialized = true;
+            
+            // 生成游戏初始场景
+            const genreName = getGenreName(gameState.gameGenre);
+            const difficultyName = getDifficultyName(gameState.gameDifficulty);
+            
+            addSystemMessage(`正在生成${genreName}游戏世界，难度：${difficultyName}...`);
+            
+            // 创建游戏初始提示
+            const initialPrompt = createInitialPrompt();
+            gameState.gameContext = initialPrompt;
+            
+            // 显示AI正在思考
+            showTypingIndicator();
+            
+            // 模拟AI生成初始场景（实际使用时替换为真实的API调用）
+            setTimeout(() => {
+                hideTypingIndicator();
+                
+                // 模拟AI响应
+                const aiResponse = generateInitialScene();
+                addAIMessage(aiResponse);
+                
+                // 添加到游戏历史
+                gameState.gameHistory.push({
+                    role: 'assistant',
+                    content: aiResponse
+                });
+                
+                // 添加系统提示
+                addSystemMessage('游戏已开始！输入你的行动指令与游戏世界互动。');
+            }, 1500);
+        }
+        
+        // 创建初始提示
+        function createInitialPrompt() {
+            const genre = gameState.gameGenre;
+            const difficulty = gameState.gameDifficulty;
+            const playerName = gameState.playerName;
+            
+            const genreSettings = {
+                fantasy: {
+                    setting: "一个充满魔法、巨龙和神秘遗迹的奇幻世界",
+                    tone: "史诗、神秘、充满奇迹"
+                },
+                scifi: {
+                    setting: "一个高科技的未来世界，有星际旅行、外星文明和人工智能",
+                    tone: "科技感、探索、未知"
+                },
+                mystery: {
+                    setting: "一个充满谜团和秘密的悬疑世界",
+                    tone: "紧张、神秘、推理"
+                },
+                horror: {
+                    setting: "一个恐怖和超自然现象存在的世界",
+                    tone: "恐怖、紧张、生存"
+                },
+                historical: {
+                    setting: "一个基于真实历史但带有幻想元素的世界",
+                    tone: "历史感、真实、冒险"
+                },
+                cyberpunk: {
+                    setting: "一个高科技低生活的未来都市，充满霓虹灯和机械义体",
+                    tone: "黑暗、高科技、反乌托邦"
+                }
+            };
+            
+            const difficultySettings = {
+                easy: "游戏应该相对简单，谜题直接，战斗容易获胜",
+                normal: "游戏应该平衡，有一定的挑战性但不会过于困难",
+                hard: "游戏应该具有挑战性，谜题复杂，战斗需要策略",
+                expert: "游戏应该非常困难，适合经验丰富的玩家，失败是常有的事"
+            };
+            
+            const genreSetting = genreSettings[genre] || genreSettings.fantasy;
+            const difficultySetting = difficultySettings[difficulty] || difficultySettings.normal;
+            
+            return `你是一个文字冒险游戏AI，请为玩家${playerName}创建一个${genreSetting.setting}。游戏基调：${genreSetting.tone}。${difficultySetting}。
+
+游戏规则：
+1. 每次我输入一个行动指令（如"探索山洞"、"与守卫交谈"），你描述该行动的结果
+2. 保持回应在3-5句话内，生动但简洁
+3. 追踪游戏状态（如物品、生命值、位置等）
+4. 当玩家遇到关键选择时，提供明确的选项
+5. 根据玩家指令推动故事发展
+
+现在，请生成游戏的初始场景描述。`;
+        }
+        
+        // 生成初始场景（模拟）
+        function generateInitialScene() {
+            const genre = gameState.gameGenre;
+            const playerName = gameState.playerName;
+            
+            const scenes = {
+                fantasy: `你，${playerName}，站在古老的艾尔达森林边缘。阳光透过茂密的树叶洒下斑驳的光影，空气中弥漫着魔法气息。前方的小径通往森林深处，传说那里有一座被遗忘的法师塔。你的装备只有一把生锈的剑和一个装着一块硬面包的背包。你会怎么做？`,
+                scifi: `你，${playerName}，从低温休眠中醒来。飞船"星穹号"的人工智能系统报告发生了未知故障，你似乎是船上唯一的幸存者。主显示屏闪烁着急促的警报：生命支持系统将在48小时内失效。你会怎么做？`,
+                mystery: `你，${playerName}，一位私家侦探，收到一封匿名信邀请你调查黑木庄园的失踪案。现在你站在庄园生锈的铁门前，雨水顺着你的帽檐滴落。二楼窗户似乎有烛光闪烁。你会怎么做？`,
+                horror: `你，${playerName}，在一间陌生的房间里醒来，头痛欲裂。房间里只有一支摇曳的蜡烛提供微弱的光亮。墙上用红色液体写着"不要相信你的眼睛"。远处传来低沉的呻吟声。你会怎么做？`,
+                historical: `你，${playerName}，一位明朝的锦衣卫，被派往沿海调查倭寇活动。你站在宁波港的码头上，海风带着咸味和隐约的血腥气。一个衣衫褴褛的渔夫慌张地向你跑来。你会怎么做？`,
+                cyberpunk: `你，${playerName}，是一名在霓虹城活动的赛博佣兵。你的神经接口刚刚收到一条加密信息："午夜，废品站，带上武器，报酬丰厚。"现在是晚上11:30，雨滴在霓虹灯下闪烁。你会怎么做？`
+            };
+            
+            return scenes[genre] || scenes.fantasy;
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            
+            if (!messageText) return;
+            
+            // 检查游戏是否已初始化
+            if (!gameState.initialized) {
+                addSystemMessage('请先点击"新游戏"开始游戏！');
+                messageInput.value = '';
+                resetInputHeight();
+                return;
+            }
+            
+            // 检查API密钥
+            if (!gameState.apiKey) {
+                addSystemMessage('API密钥未设置。请点击"设置"按钮配置。');
+                gameSettings.classList.add('settings-active');
+                messageInput.value = '';
+                resetInputHeight();
+                return;
+            }
+            
+            // 添加用户消息到聊天
+            addUserMessage(messageText);
+            
+            // 清空输入框
+            messageInput.value = '';
+            resetInputHeight();
+            
+            // 添加到游戏历史
+            gameState.gameHistory.push({
+                role: 'user',
+                content: messageText
+            });
+            
+            // 显示AI正在思考
+            showTypingIndicator();
+            
+            // 调用AI API（这里使用模拟响应，实际使用时替换为真实API调用）
+            setTimeout(() => {
+                simulateAIResponse(messageText);
+            }, 1000);
+        }
+        
+        // 模拟AI响应（实际使用时替换为真实的API调用）
+        function simulateAIResponse(userMessage) {
+            hideTypingIndicator();
+            
+            // 简单的关键词匹配生成响应（实际游戏应使用API）
+            let aiResponse = "";
+            const lowerMessage = userMessage.toLowerCase();
+            
+            if (lowerMessage.includes('探索') || lowerMessage.includes('查看') || lowerMessage.includes('检查')) {
+                if (lowerMessage.includes('森林') || lowerMessage.includes('树林')) {
+                    aiResponse = `你小心翼翼地进入艾尔达森林。参天古树遮天蔽日，脚下是厚厚的苔藓。你注意到一棵古树的根部有一个奇怪的符号，似乎是一种古老的魔法标记。不远处，你听到溪流的声音。`;
+                } else if (lowerMessage.includes('山洞') || lowerMessage.includes('洞穴')) {
+                    aiResponse = `你发现了一个隐蔽的山洞入口。洞内黑暗潮湿，隐约能听到滴水声。你的眼睛逐渐适应黑暗，看到洞壁上有些发光的苔藓，洞深处似乎有微弱的光芒闪烁。`;
+                } else {
+                    aiResponse = `你仔细检查了周围环境。这个地方充满了神秘气息，每一个细节都可能隐藏着线索。你注意到一些不寻常的痕迹，似乎最近有人经过这里。`;
+                }
+            } else if (lowerMessage.includes('攻击') || lowerMessage.includes('战斗') || lowerMessage.includes('杀死')) {
+                aiResponse = `你拔出武器准备战斗。突然，一只森林狼从灌木丛中跳出来！它龇着牙，发出低沉的咆哮。你有机会先发制人，或者尝试吓跑它。`;
+            } else if (lowerMessage.includes('交谈') || lowerMessage.includes('说话') || lowerMessage.includes('询问')) {
+                aiResponse = `你试图与周围的环境互动。风吹过树叶发出沙沙声，仿佛在回应你。远处传来鸟鸣，但似乎没有其他智慧生物在场。或许你需要找到可以交谈的对象。`;
+            } else if (lowerMessage.includes('使用') || lowerMessage.includes('拿出')) {
+                if (lowerMessage.includes('剑') || lowerMessage.includes('武器')) {
+                    aiResponse = `你握紧了手中的剑。剑虽然生锈，但在光线下依然能反射寒光。武器在手，你感到更加安全，但也更加显眼。`;
+                } else if (lowerMessage.includes('面包') || lowerMessage.includes('食物')) {
+                    aiResponse = `你拿出硬面包咬了一口。它干硬难咽，但能缓解饥饿感。体力恢复了一些，你觉得自己能继续前进了。`;
+                } else {
+                    aiResponse = `你使用了物品，但似乎没有产生明显效果。或许这个物品需要在特定情境下使用，或者需要与其他物品组合。`;
+                }
+            } else if (lowerMessage.includes('保存游戏') || lowerMessage.includes('保存进度')) {
+                aiResponse = `游戏进度已保存！你可以随时退出，下次回来时会从当前位置继续。不过要小心，游戏世界在你离开时可能仍在变化...`;
+            } else if (lowerMessage.includes('帮助') || lowerMessage.includes('指令')) {
+                aiResponse = `你可以尝试以下类型指令：
+1. 探索 [地点] - 探索特定区域
+2. 使用 [物品] - 使用背包中的物品
+3. 攻击 [目标] - 与敌人战斗
+4. 交谈 [角色] - 与NPC对话
+5. 检查 [物品/地点] - 仔细检查某物
+6. 向北/南/东/西 - 向特定方向移动
+7. 保存游戏 - 保存当前进度`;
+            } else {
+                // 默认响应
+                aiResponse = `你尝试"${userMessage}"。行动产生了一些效果，但结果并不完全如你所料。这个世界充满了未知，每个选择都可能带来意想不到的后果。你会继续探索吗？`;
+            }
+            
+            // 添加AI消息
+            addAIMessage(aiResponse);
+            
+            // 添加到游戏历史
+            gameState.gameHistory.push({
+                role: 'assistant',
+                content: aiResponse
+            });
+            
+            // 如果历史记录太长，截断以节省token
+            if (gameState.gameHistory.length > 20) {
+                gameState.gameHistory = gameState.gameHistory.slice(-10);
+            }
+        }
+        
+        // 真实API调用函数（示例结构）
+        async function callDeepSeekAPI(userMessage) {
+            // 这里应该是实际的API调用代码
+            // 示例结构：
+            /*
+            try {
+                const response = await fetch(`${gameState.apiBase}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${gameState.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: gameState.aiModel,
+                        messages: [
+                            { role: 'system', content: gameState.gameContext },
+                            ...gameState.gameHistory,
+                            { role: 'user', content: userMessage }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0.8
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.error('API调用失败:', error);
+                return `抱歉，处理你的请求时出错: ${error.message}`;
+            }
+            */
+            
+            // 模拟响应（实际使用时删除这部分）
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve(`这是通过API调用生成的响应（模拟）。实际使用时，请取消注释上面的API调用代码并填写正确的API端点。\n\n你尝试"${userMessage}"。行动产生了一些效果，但结果并不完全如你所料。这个世界充满了未知，每个选择都可能带来意想不到的后果。`);
+                }, 1000);
+            });
+        }
+        
+        // 添加AI消息
+        function addAIMessage(content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-ai';
+            messageDiv.innerHTML = `
+                <div class="message-sender">
+                    <i class="fas fa-robot"></i>
+                    <span>游戏世界</span>
+                </div>
+                <div class="message-content">${content}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // 添加用户消息
+        function addUserMessage(content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-user';
+            messageDiv.innerHTML = `
+                <div class="message-sender">
+                    <i class="fas fa-user"></i>
+                    <span>${gameState.playerName}</span>
+                </div>
+                <div class="message-content">${content}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // 添加系统消息
+        function addSystemMessage(content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-system';
+            messageDiv.innerHTML = `
+                <i class="fas fa-info-circle"></i> ${content}
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        // 显示AI正在输入指示器
+        function showTypingIndicator() {
+            typingIndicator.classList.add('active');
+            sendButton.disabled = true;
+            scrollToBottom();
+        }
+        
+        // 隐藏AI正在输入指示器
+        function hideTypingIndicator() {
+            typingIndicator.classList.remove('active');
+            sendButton.disabled = false;
+        }
+        
+        // 滚动到底部
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 100);
+        }
+        
+        // 重置输入框高度
+        function resetInputHeight() {
+            messageInput.style.height = 'auto';
+            messageInput.style.overflowY = 'hidden';
+        }
+        
+        // 显示帮助
+        function showHelp() {
+            const helpMessage = `
+                <strong>AI文字冒险游戏指南</strong><br><br>
+                1. <strong>开始游戏</strong>: 点击"设置"配置API密钥和游戏偏好，然后点击"新游戏"<br>
+                2. <strong>游戏指令</strong>: 输入行动指令与游戏世界互动，如"探索森林"、"使用钥匙"<br>
+                3. <strong>API配置</strong>: 你需要DeepSeek API密钥，可在其官网获取<br>
+                4. <strong>游戏类型</strong>: 可选择奇幻、科幻、悬疑等不同风格<br>
+                5. <strong>保存进度</strong>: 输入"保存游戏"可保存当前进度（本地存储）<br><br>
+                游戏完全由AI驱动，每次选择都会影响故事发展。享受你的冒险吧！
+            `;
+            
+            addSystemMessage(helpMessage);
+        }
+        
+        // 获取游戏类型名称
+        function getGenreName(genre) {
+            const names = {
+                fantasy: '奇幻冒险',
+                scifi: '科幻未来',
+                mystery: '悬疑解谜',
+                horror: '恐怖生存',
+                historical: '历史穿越',
+                cyberpunk: '赛博朋克'
+            };
+            return names[genre] || '奇幻冒险';
+        }
+        
+        // 获取难度名称
+        function getDifficultyName(difficulty) {
+            const names = {
+                easy: '简单',
+                normal: '普通',
+                hard: '困难',
+                expert: '专家'
+            };
+            return names[difficulty] || '普通';
+        }
+    </script>
+</body>
+</html>
